@@ -73,7 +73,18 @@ Upload file: `store/ad-swap-for-twitch-0.43.zip`
     PRIVACY
     Ad Swap runs only on www.twitch.tv. It collects nothing and has no account or sign-in. The only requests it makes are to Twitch itself, for the clips of the channel you are watching. It keeps your settings, a count of swapped ad breaks, any videos you add, which of the streamer's clips you have already been shown (so they are not repeated), and a short troubleshooting log in your own browser. None of it leaves your computer unless you copy the log yourself (right-click the banner).
 
+    OPEN SOURCE
+    The full source code is public on GitHub, so you can check exactly what Ad Swap does: https://github.com/Chandler090/ad-swap-for-twitch
+    Found a problem or have an idea? Open an issue there: https://github.com/Chandler090/ad-swap-for-twitch/issues
+
     Ad Swap is an independent project. It is not affiliated with, endorsed by, or sponsored by Twitch.
+
+**Additional fields** (lower down the Store listing tab; add these with the next update)
+
+    Official URL:  leave empty (it needs a website you have proven you own)
+    Homepage URL:  https://github.com/Chandler090/ad-swap-for-twitch
+    Support URL:   https://github.com/Chandler090/ad-swap-for-twitch/issues
+                   (swap this for the feedback form once it exists)
 
 **Category**
 
