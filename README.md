@@ -60,3 +60,11 @@ requests go to Twitch, for the public clips of the channel you are watching. You
 short troubleshooting log stay in your own browser.
 
 AdSwap is an independent project. It is not affiliated with, endorsed by, or sponsored by Twitch.
+
+## License
+
+Copyright © 2026 Chandler090. All rights reserved.
+
+You're welcome to read the code and to suggest changes or report problems in
+[Issues](https://github.com/Chandler090/ad-swap-for-twitch/issues). No license is granted to copy or
+republish it.
