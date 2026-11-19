@@ -19,6 +19,8 @@ Upload file: `store/ad-swap-for-twitch-0.43.zip`
 
     Ad Swap for Twitch keeps you watching the stream during ad breaks.
 
+    It does not take ad revenue from the streamer. Ad Swap never blocks or skips an ad: every ad still plays all the way through in Twitch's own player, just as it would without Ad Swap. You simply don't have to watch it.
+
     When a streamer runs an ad break, Twitch often keeps the live stream playing, muted, in a small player above chat while the ad takes over the main player. Ad Swap switches the two: the live stream goes back in the main player with its sound, and the ad plays silently in the small spot. When the break ends, everything goes back to normal by itself.
 
     WHAT IT DOES
