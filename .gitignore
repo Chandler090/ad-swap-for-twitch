@@ -1,0 +1,8 @@
+# Built by store/build_zip.py for each upload; rebuilt from the files here.
+store/*.zip
+
+# Scratch output from running the tests by hand.
+test/.out*.txt
+
+__pycache__/
+*.pyc

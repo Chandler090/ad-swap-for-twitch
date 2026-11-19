@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ad Swap: my videos</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #111315; overflow: hidden; }
+  video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
+  p {
+    position: absolute; inset: 0; margin: 0; padding: 0 12px;
+    display: grid; place-items: center; text-align: center;
+    color: #9aa3a8; font: 600 13px/1.4 system-ui, sans-serif;
+  }
+
+  /* While the streamer's clips play: say plainly that this is a clip, not the live stream,
+     and when the live stream comes back. Sized to the player, so it reads in the small player
+     and in the main one. Kept clear of the bottom edge, where Twitch shows its controls. */
+  #label {
+    position: absolute; left: 3%; bottom: 11%;
+    max-width: 78%;
+    padding: 0.45em 0.7em 0.5em;
+    border-radius: 0.55em;
+    background: rgba(12, 13, 15, 0.78);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), 0 4px 14px rgba(0, 0, 0, 0.35);
+    color: #f2f4f5;
+    font: 600 clamp(10px, 2.1vw, 16px)/1.3 "Segoe UI", system-ui, sans-serif;
+    pointer-events: none;
+  }
+  #label .what { display: flex; align-items: center; gap: 0.5em; min-width: 0; }
+  #label b {
+    flex: none;
+    padding: 0.12em 0.42em; border-radius: 0.3em;
+    background: #2bc4b2; color: #04211e;
+    font-size: 0.78em; letter-spacing: 0.06em;
+  }
+  #clip-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  #back { margin-top: 0.25em; color: #9fe7dd; font-weight: 500; font-size: 0.86em; font-variant-numeric: tabular-nums; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<video id="v" muted autoplay playsinline></video>
+<div id="label" hidden>
+  <div class="what"><b>CLIP</b><span id="clip-title"></span></div>
+  <div id="back" hidden>The live stream is back in <span id="back-t"></span></div>
+</div>
+<p id="msg" hidden>No videos yet. Add some under &ldquo;My videos&rdquo; in Ad Swap.</p>
+<script src="library.js"></script>
+<script src="schedule.js"></script>
+<script src="player.js"></script>
+</body>
+</html>

@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ad Swap for Twitch</title>
+<link rel="icon" href="icons/icon32.png">
+<style>
+  :root {
+    --ink: #0f1012;            /* page */
+    --stage: #17191c;          /* raised surfaces, same cool-grey family */
+    --tile: #1c1f23;
+    --hair: rgba(255, 255, 255, 0.07);
+    --text: #f2f4f5;
+    --soft: #9aa3a8;
+    --faint: #626b70;
+    --live: #2bc4b2;           /* the one accent: the live stream */
+    --live-deep: #0d5a52;
+    --live-ink: #04211e;
+    --ad: #343a40;
+    --spring: cubic-bezier(0.3, 1.35, 0.5, 1);
+    --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+    --display: "Bahnschrift", "SF Pro Display", "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+    --body: "Segoe UI Variable Text", "Segoe UI", -apple-system, system-ui, sans-serif;
+    --mono: "Cascadia Mono", "Cascadia Code", "SF Mono", Consolas, ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    width: 672px;
+    position: relative;
+    background:
+      radial-gradient(90% 60% at 12% -8%, rgba(43, 196, 178, 0.20), transparent 62%),
+      radial-gradient(70% 45% at 108% 104%, rgba(43, 196, 178, 0.09), transparent 60%),
+      var(--ink);
+    color: var(--text);
+    font: 13.5px/1.55 var(--body);
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+  /* film grain, so the dark is not a flat digital black */
+  body::after {
+    content: "";
+    position: absolute; inset: 0;
+    pointer-events: none;
+    opacity: 0.11;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>");
+  }
+  main { position: relative; padding: 18px 20px 16px; }
+  .cols { display: grid; grid-template-columns: 304px 304px; gap: 24px; align-items: start; }
+  .col > .opts { margin-top: 0; padding-top: 0; border-top: 0; }
+
+  /* ---------- masthead ---------- */
+  .mast { display: flex; align-items: baseline; justify-content: space-between; }
+  h1 {
+    margin: 0;
+    font: 600 25px/1 var(--display);
+    letter-spacing: -0.02em;
+  }
+  h1 span { color: var(--soft); font-weight: 400; font-size: 14px; letter-spacing: 0; margin-left: 5px; }
+  .ver { font: 11px/1 var(--mono); color: var(--faint); font-variant-numeric: tabular-nums; }
+
+  /* ---------- the stage: a tiny picture of what the extension does ---------- */
+  .stage {
+    position: relative;
+    height: 114px;
+    margin-top: 12px;
+    border: 0; padding: 0; width: 100%;
+    display: block;
+    border-radius: 16px;
+    background: linear-gradient(180deg, #1b1e22, #15171a);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.07),
+      inset 0 0 0 1px var(--hair),
+      0 14px 30px -18px rgba(4, 60, 54, 0.9);
+    overflow: hidden;
+    cursor: pointer;
+    font: inherit; color: inherit; text-align: left;
+  }
+  .stage:focus-visible { outline: 2px solid var(--live); outline-offset: 3px; }
+  .screen {
+    position: absolute; top: 9px;
+    border-radius: 9px;
+    transform-origin: 0 0;
+    display: grid; place-items: center;
+  }
+  /* final places: stream in the big slot, ad in the small slot */
+  .live {
+    left: 14px; width: 171px; height: 96px; z-index: 2;
+    background:
+      radial-gradient(120% 120% at 20% 0%, #5fe3d3, transparent 60%),
+      linear-gradient(160deg, var(--live), var(--live-deep));
+    box-shadow: 0 10px 24px -10px rgba(43, 196, 178, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    animation: live-in 900ms var(--spring) 650ms both;
+  }
+  .ad {
+    left: 197px; width: 93px; height: 52px; border-radius: 7px; z-index: 1;
+    background: var(--ad);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    animation: ad-in 900ms var(--spring) 650ms both;
+  }
+  /* they start the other way round, the way Twitch leaves them */
+  @keyframes live-in { from { transform: translate(183px, 0) scale(0.5439); } to { transform: none; } }
+  @keyframes ad-in { from { transform: translate(-183px, 0) scale(1.8387); } to { transform: none; } }
+
+  .live svg { width: 27px; height: 27px; margin-left: 4px; fill: #fff; filter: drop-shadow(0 2px 6px rgba(4, 33, 30, 0.45)); }
+  .tag {
+    position: absolute; left: 8px; bottom: 7px;
+    font: 600 9.5px/1 var(--mono); letter-spacing: 0.09em;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .live .tag { color: var(--live-ink); }
+  .live .tag i { width: 6px; height: 6px; border-radius: 50%; background: #fff; animation: pulse 1.8s ease-in-out infinite; }
+  .ad .tag { position: static; color: #8a9399; font-size: 9px; }
+  @keyframes pulse { 50% { opacity: 0.35; } }
+
+  /* the chat column under the small player */
+  .chat { position: absolute; left: 197px; top: 72px; width: 93px; display: grid; gap: 7px; }
+  .chat b { display: block; height: 5px; border-radius: 3px; background: rgba(255, 255, 255, 0.08); }
+  .chat b:nth-child(2) { width: 72%; }
+  .chat b:nth-child(3) { width: 88%; }
+  .chat b:nth-child(4) { width: 54%; }
+  .chat b:nth-child(5) { width: 80%; }
+
+  /* ---------- the running count ---------- */
+  .tally { margin-top: 13px; }
+  .tally .big { font: 600 18px/1.2 var(--display); letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+  .tally .sub { margin-top: 3px; color: var(--live); font-size: 12.5px; line-height: 1.35; font-variant-numeric: tabular-nums; }
+  .tally.none .sub { color: var(--soft); }
+
+  /* ---------- words ---------- */
+  p { margin: 6px 0 0; color: var(--soft); text-wrap: pretty; }
+  .cant { margin-top: 10px; padding-left: 10px; border-left: 2px solid var(--live-deep); font-size: 12.5px; line-height: 1.45; }
+
+  /* ---------- the settings ---------- */
+  .opts { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--hair); }
+  .opts h3 { margin: 0; font: 600 13px/1.2 var(--display); letter-spacing: 0; color: var(--text); }
+  .opts .row { display: flex; align-items: baseline; justify-content: space-between; margin-top: 11px; }
+  .opts .row a { font-size: 12px; color: var(--live); text-decoration: none; border-radius: 4px; }
+  .opts .row a:hover { text-decoration: underline; }
+  .opts .row a:focus-visible { outline: 2px solid var(--live); outline-offset: 2px; }
+  .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; margin-top: 7px; padding: 3px;
+    border-radius: 11px; background: #17191c; box-shadow: inset 0 0 0 1px var(--hair); }
+  .seg.three { grid-template-columns: 1fr 1fr 1fr; }
+  .seg.four { grid-template-columns: repeat(4, 1fr); }
+  .seg.four button { font-size: 11.5px; padding-left: 2px; padding-right: 2px; }
+  .seg button { border: 0; border-radius: 8px; padding: 6px 4px; background: transparent; color: var(--soft);
+    font: 600 12.5px/1.2 var(--body); cursor: pointer;
+    transition: background-color 180ms var(--ease), color 180ms var(--ease), transform 120ms var(--ease); }
+  .seg button:hover { color: var(--text); }
+  .seg button:active { transform: scale(0.98); }
+  .seg button[aria-checked="true"] { background: var(--live); color: var(--live-ink);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3); }
+  .seg button:focus-visible { outline: 2px solid var(--live); outline-offset: 2px; }
+
+  /* ---------- coffee ---------- */
+  .coffee { margin-top: 13px; padding-top: 12px; border-top: 1px solid var(--hair); }
+  .coffee header { display: flex; align-items: center; gap: 9px; }
+  .coffee header svg { width: 20px; height: 20px; flex: none; color: var(--live); }
+  .coffee .free { margin-left: auto; font-size: 11.5px; color: var(--faint); }
+  .coffee h3 { margin: 0; font: 600 15px/1.2 var(--display); letter-spacing: -0.005em; }
+  .coffee p { font-size: 12.5px; margin-top: 4px; }
+  .tips { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-top: 10px; }
+  .tips a {
+    position: relative;
+    display: grid; gap: 5px;
+    padding: 9px 12px 10px;
+    border-radius: 12px;
+    background: var(--tile);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), inset 0 0 0 1px var(--hair);
+    color: var(--text); text-decoration: none;
+    transition: transform 220ms var(--ease), background-color 220ms var(--ease), box-shadow 220ms var(--ease);
+  }
+  .tips a small { font: 500 11px/1 var(--body); color: var(--soft); transition: color 220ms var(--ease); }
+  .tips a .handle { font: 600 14px/1.1 var(--mono); letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tips a svg {
+    position: absolute; right: 10px; top: 10px; width: 13px; height: 13px;
+    color: var(--faint); transition: transform 220ms var(--ease), color 220ms var(--ease);
+  }
+  .tips a:hover {
+    background: var(--live); color: var(--live-ink);
+    transform: translateY(-1px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 10px 22px -12px rgba(43, 196, 178, 0.8);
+  }
+  .tips a:hover small { color: rgba(4, 33, 30, 0.72); }
+  .tips a:hover svg { color: var(--live-ink); transform: translate(2px, -2px); }
+  .tips a:active { transform: scale(0.98); }
+  .tips a:focus-visible { outline: 2px solid var(--live); outline-offset: 2px; }
+
+  .key { margin-top: 12px; font-size: 12px; line-height: 1.45; }
+  .key kbd { font: 600 11px/1 var(--mono); color: var(--text); padding: 3px 6px; border-radius: 5px;
+    background: #1b1d20; box-shadow: inset 0 0 0 1px var(--hair), 0 1px 0 rgba(0, 0, 0, 0.5); white-space: nowrap; }
+  .key a { color: var(--live); text-decoration: none; }
+  .key a:hover { text-decoration: underline; }
+  .key a:focus-visible { outline: 2px solid var(--live); outline-offset: 2px; border-radius: 3px; }
+  footer { margin-top: 8px; color: var(--faint); font-size: 11px; line-height: 1.4; }
+
+  /* ---------- everything arrives in turn ---------- */
+  .rise { animation: rise 520ms var(--ease) both; }
+  .rise:nth-child(1) { animation-delay: 20ms; }
+  .rise:nth-child(2) { animation-delay: 80ms; }
+  .rise:nth-child(3) { animation-delay: 140ms; }
+  .rise:nth-child(4) { animation-delay: 200ms; }
+  .rise:nth-child(5) { animation-delay: 260ms; }
+  .rise:nth-child(6) { animation-delay: 320ms; }
+  .rise:nth-child(7) { animation-delay: 380ms; }
+  .rise:nth-child(8) { animation-delay: 440ms; }
+  .rise:nth-child(9) { animation-delay: 500ms; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+
+  [hidden] { display: none !important; }
+  @media (prefers-reduced-motion: reduce) {
+    .rise, .live, .ad, .live .tag i { animation: none; }
+    .tips a, .tips a svg, .tips a small, .seg button { transition: none; }
+  }
+</style>
+</head>
+<body>
+<main>
+<div class="cols">
+<div class="col">
+  <div class="mast rise">
+    <h1>Ad Swap<span>for Twitch</span></h1>
+    <div class="ver" id="ver"></div>
+  </div>
+
+  <button class="stage rise" id="stage" type="button" aria-label="Replay: the live stream and the ad trade places">
+    <span class="screen live">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5z"/></svg>
+      <span class="tag"><i></i>LIVE</span>
+    </span>
+    <span class="screen ad"><span class="tag">AD</span></span>
+    <span class="chat" aria-hidden="true"><b></b><b></b><b></b><b></b></span>
+  </button>
+
+  <div class="tally rise" aria-live="polite">
+    <div class="big" id="tally-n">No ad breaks swapped yet</div>
+    <div class="sub" id="tally-t">The count starts with your first one.</div>
+  </div>
+
+  <p class="cant rise"><strong>Some ads can't be swapped:</strong> one that plays as a channel opens, or a break with no small player. They can be covered instead, and the status banner in Twitch's top bar will tell you when.</p>
+
+  <p class="key rise">Press <kbd id="key">Alt+Shift+A</kbd> on Twitch to cover or uncover the player at any time. <a href="#" id="key-change">Change</a></p>
+  <footer class="rise">Click the banner on Twitch to turn Ad Swap off or on.</footer>
+</div>
+<div class="col">
+  <section class="opts rise">
+    <h3 id="size-h">Stream during an ad</h3>
+    <div class="seg" data-key="fit" role="radiogroup" aria-labelledby="size-h">
+      <button type="button" role="radio" data-value="fill" aria-checked="true" title="Stretch the stream to fill the player. Twitch only sends a 640x360p picture during ads, so it looks soft.">Fill the player</button>
+      <button type="button" role="radio" data-value="actual" aria-checked="false" title="Draw the stream at its real 640x360p size, centred on black. Small, but as sharp as it gets.">Actual size</button>
+    </div>
+    <div class="row">
+      <h3 id="mini-h">Small player during an ad</h3>
+      <a id="videos-link" href="options.html" target="_blank" rel="noopener">My videos&hellip;</a>
+    </div>
+    <div class="seg four" data-key="mini" role="radiogroup" aria-labelledby="mini-h">
+      <button type="button" role="radio" data-value="ad" aria-checked="true" title="Show the advert there, muted. The two players are swapped.">The ad</button>
+      <button type="button" role="radio" data-value="hide" aria-checked="false" title="Show a plain card with the time left, so you never see the advert.">Hidden</button>
+      <button type="button" role="radio" data-value="video" aria-checked="false" title="Play your own videos there instead of the advert. Add them under My videos.">My videos</button>
+      <button type="button" role="radio" data-value="clips" aria-checked="false" title="Play the streamer's most-watched clips there instead of the advert.">Their clips</button>
+    </div>
+    <div class="row"><h3 id="full-h">Ads that can&rsquo;t be swapped</h3></div>
+    <div class="seg four" data-key="full" role="radiogroup" aria-labelledby="full-h">
+      <button type="button" role="radio" data-value="video" aria-checked="true" title="Cover the ad with your own videos, with their sound. If you have not added any, the streamer's clips; if there are none, the ad plays.">My videos</button>
+      <button type="button" role="radio" data-value="clips" aria-checked="false" title="Cover the ad with the streamer's most-watched clips, with their sound.">Their clips</button>
+      <button type="button" role="radio" data-value="ad" aria-checked="false" title="Leave these ads alone.">The ad</button>
+      <button type="button" role="radio" data-value="hide" aria-checked="false" title="Cover the ad with a plain card and the time left, in silence.">Hidden</button>
+    </div>
+    <div class="row"><h3 id="sound-h">Sound during an ad</h3></div>
+    <div class="seg" data-key="sound" role="radiogroup" aria-labelledby="sound-h">
+      <button type="button" role="radio" data-value="stream" aria-checked="true" title="Hear the live stream. The advert and your own videos stay silent.">The stream</button>
+      <button type="button" role="radio" data-value="small" aria-checked="false" title="Hear the small player instead: the advert, or your own video. The stream is silent until the break ends.">The small player</button>
+    </div>
+    <div class="row"><h3 id="notify-h">When an ad break ends</h3></div>
+    <div class="seg" data-key="notify" role="radiogroup" aria-labelledby="notify-h">
+      <button type="button" role="radio" data-value="off" aria-checked="true" title="Do nothing.">Do nothing</button>
+      <button type="button" role="radio" data-value="on" aria-checked="false" title="If you are in another tab or window, show a notification when the stream is back. Click it to go back.">Notify me</button>
+    </div>
+  </section>
+
+  <section class="coffee rise" id="coffee" hidden>
+    <header>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M4 10h12v4.5A4.5 4.5 0 0 1 11.5 19h-3A4.5 4.5 0 0 1 4 14.5z"/>
+        <path d="M16 11h1.6a2.4 2.4 0 0 1 0 4.8H16"/>
+        <path d="M7.5 6.5c0-1 1-1.2 1-2.2M11.5 6.5c0-1 1-1.2 1-2.2"/>
+      </svg>
+      <h3>Buy me a coffee</h3>
+      <span class="free">Free. Tips never expected.</span>
+    </header>
+    <div class="tips">
+      <a id="tip-cashapp" target="_blank" rel="noopener noreferrer" hidden>
+        <small>Cash App</small><span class="handle"></span>
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 11l6-6M6 5h5v5"/></svg>
+      </a>
+      <a id="tip-paypal" target="_blank" rel="noopener noreferrer" hidden>
+        <small>PayPal</small><span class="handle"></span>
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 11l6-6M6 5h5v5"/></svg>
+      </a>
+      <a id="tip-venmo" target="_blank" rel="noopener noreferrer" hidden>
+        <small>Venmo</small><span class="handle"></span>
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 11l6-6M6 5h5v5"/></svg>
+      </a>
+    </div>
+  </section>
+
+</div>
+</div>
+</main>
+<script src="popup.js"></script>
+</body>
+</html>
