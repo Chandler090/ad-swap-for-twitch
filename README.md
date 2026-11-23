@@ -14,7 +14,9 @@ break ends.
 Some ads come with no stream to swap in (an ad as a channel opens, or a break with no small player). AdSwap
 covers and mutes those instead, with your own videos, the streamer's own clips, or a countdown card.
 
-It does not block or skip ads. The ad still plays, so the streamer still gets paid for it.
+It does not block or skip ads. The ad still plays, so the streamer still gets paid for it. The one exception
+is an optional setting, off by default, that reloads the page when a break comes with no small player
+(which sometimes brings it); that cuts the ad short.
 
 Everything else (stream size, what the small player shows, sound, your own videos, a notification when a
 break ends) is set from the extension's toolbar popup. Press `-` on Twitch to cover or uncover the player at

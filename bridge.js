@@ -11,6 +11,7 @@
 //        data-adswap-sound "stream" | "small"      which of the two is heard during a swap
 //        data-adswap-full  "video" | "clips" | "hide" | "ad"  what covers an ad that cannot be swapped
 //        data-adswap-videos  how many videos the viewer has added (so "video" can fall back)
+//        data-adswap-reload "off" | "on"         reload the page for a break with no small player
 //   2. Tells the page where the extension's own pages live (data-adswap-base), so the main
 //      script can show the viewer's own videos.
 //   3. Keeps the running totals for the popup ("12 ad breaks swapped"), from the message the
@@ -42,19 +43,20 @@
     mark('data-adswap-sound', saved.sound === 'small' ? 'small' : 'stream');
     mark('data-adswap-full', saved.full === 'hide' || saved.full === 'ad' || saved.full === 'clips' ? saved.full : 'video');
     mark('data-adswap-videos', String(Math.max(0, parseInt(saved.videos, 10) || 0)));
+    mark('data-adswap-reload', saved.reload === 'on' ? 'on' : 'off');
   }
   function connected() {
     try { return !!(chrome.runtime && chrome.runtime.id); } catch (e) { return false; }
   }
 
-  var SETTINGS = { fit: 'fill', mini: 'ad', sound: 'stream', full: 'video', videos: 0 };
+  var SETTINGS = { fit: 'fill', mini: 'ad', sound: 'stream', full: 'video', videos: 0, reload: 'off' };
 
   try {
     mark('data-adswap-base', chrome.runtime.getURL(''));
     chrome.storage.local.get(SETTINGS, apply);
     chrome.storage.onChanged.addListener(function (changes, area) {
       if (area !== 'local') return;
-      if (changes.fit || changes.mini || changes.sound || changes.full || changes.videos) chrome.storage.local.get(SETTINGS, apply);
+      if (changes.fit || changes.mini || changes.sound || changes.full || changes.videos || changes.reload) chrome.storage.local.get(SETTINGS, apply);
     });
 
     // A swap ended. Only this page's own messages count, and only sensible lengths.

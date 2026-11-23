@@ -19,7 +19,7 @@ Upload file: `store/ad-swap-for-twitch-0.44.zip`
 
     Ad Swap for Twitch keeps you watching the stream during ad breaks.
 
-    It does not take ad revenue from the streamer. Ad Swap never blocks or skips an ad: every ad still plays all the way through in Twitch's own player, just as it would without Ad Swap. You simply don't have to watch it.
+    It does not take ad revenue from the streamer. Ad Swap never blocks or skips an ad: every ad still plays all the way through in Twitch's own player, just as it would without Ad Swap. You simply don't have to watch it. (The one exception is an optional setting, off unless you turn it on, that reloads the page when an ad break comes with no small player. That cuts the ad short, and the setting says so.)
 
     When a streamer runs an ad break, Twitch often keeps the live stream playing, muted, in a small player above chat while the ad takes over the main player. Ad Swap switches the two: the live stream goes back in the main player with its sound, and the ad plays silently in the small spot. When the break ends, everything goes back to normal by itself.
 
@@ -36,6 +36,7 @@ Upload file: `store/ad-swap-for-twitch-0.44.zip`
     • Your choice of sound: the live stream (the default), or the small player instead
     • A keyboard shortcut, the - (minus) key, to cover the player at any moment, for anything you would rather not see, and to uncover it again. It does nothing while you are typing in chat
     • An optional notification when an ad break ends, if you have gone to another tab
+    • Optional, off by default: for a break that comes with no small player, reload the page once, which sometimes brings the small player so the ad can be swapped. It cuts that ad short, so the streamer may not be paid for it. At most once every 10 minutes per tab, never for the ad that plays as a channel opens
     • A safety net: if Twitch leaves its ad notice stuck on screen, Ad Swap lets go so you are never left looking at a cover
     • A running count of the ad breaks it has swapped and the time you didn't spend watching ads
     All of these are set by clicking the Ad Swap icon in Chrome's toolbar.
@@ -63,7 +64,7 @@ Upload file: `store/ad-swap-for-twitch-0.44.zip`
     Tip: if you are testing it, stay on one channel. Every refresh or channel change can bring another opening ad.
 
     WHAT ELSE TO KNOW
-    • It does not block or skip ads. The ad still plays; you just are not forced to watch it.
+    • It does not block or skip ads. The ad still plays; you just are not forced to watch it. The only exception is the optional reload described above, which you have to turn on yourself.
     • During a swap the stream is shown at the quality Twitch sends to the small player, which is 640x360p. It returns to full quality when the break ends.
 
     HOW TO USE IT
@@ -73,7 +74,7 @@ Upload file: `store/ad-swap-for-twitch-0.44.zip`
     Ad Swap is free and always will be. If it saves you from a few ad breaks and you feel like saying thanks, click the Ad Swap icon in Chrome's toolbar: there is an optional "Buy me a coffee" box with Cash App and Venmo links.
 
     PRIVACY
-    Ad Swap runs only on www.twitch.tv. It collects nothing and has no account or sign-in. The only requests it makes are to Twitch itself, for the clips of the channel you are watching. It keeps your settings, a count of swapped ad breaks, any videos you add, which of the streamer's clips you have already been shown (so they are not repeated), and a short troubleshooting log in your own browser. None of it leaves your computer unless you copy the log yourself (right-click the banner).
+    Ad Swap runs only on www.twitch.tv. It collects nothing and has no account or sign-in. The only requests it makes are to Twitch itself, for the clips of the channel you are watching. It keeps your settings, a count of swapped ad breaks, any videos you add, which of the streamer's clips you have already been shown (so they are not repeated), when it last reloaded a tab (if you turned that on), and a short troubleshooting log in your own browser. None of it leaves your computer unless you copy the log yourself (right-click the banner).
 
     OPEN SOURCE
     The full source code is public on GitHub, so you can check exactly what Ad Swap does: https://github.com/Chandler090/ad-swap-for-twitch

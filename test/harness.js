@@ -841,7 +841,7 @@ step(4);
 check('...it says "Covered", how to undo it, offers no clips button, and the banner says so too',
   S.fullCover.kids[0].kids[0].textContent === 'Covered' && S.fullCover.kids[0].kids[1].textContent === 'Press - to uncover' &&
   S.fullCover.kids[0].kids.length === 2 &&
-  /press the shortcut again/.test(S.badge.textContent));
+  /press - to uncover/.test(S.badge.textContent));
 step(40);
 check('...and stays, with no ad on, until the shortcut is pressed again', !!S.fullCover);
 S.coverNow();
@@ -1157,6 +1157,62 @@ check('Ctrl+- (browser zoom) and Alt+- do nothing', !S.fullCover);
 key({ key: 'a' });
 check('other keys do nothing', !S.fullCover);
 step(8);
+
+// 52. ASKED (2026-11-23): "Sometimes you can get past a ad that doesn't have a mini player just by
+//     reloading the page for the mini player to show up". Optional and off by default, because the
+//     reload cuts the ad short. Never for an ad as the channel opens, never in a background tab,
+//     at most once per tab every 10 minutes, and never without the note that guards against a loop.
+body.textContent = ''; step(16);
+const attrs52 = { 'data-adswap-base': 'chrome-extension://abcdefghijklmnop/', 'data-adswap-videos': '0', 'data-adswap-full': 'hide' };
+document.documentElement = { getAttribute(k) { return k in attrs52 ? attrs52[k] : null; } };
+const sess52 = {};
+global.sessionStorage = { getItem(k) { return k in sess52 ? sess52[k] : null; }, setItem(k, v) { sess52[k] = String(v); } };
+let reloads52 = 0;
+global.location = { pathname: '/streamer_two', origin: 'https://www.twitch.tv', reload() { reloads52++; } };
+main2.muted = false; chat.collapsed = false;
+step(120);                                                     // 30 seconds of stream: not an opening ad
+const AD52 = (left) => 'Streamer is taking an ad break; stick around to support the stream! Ad (' + left + ')';
+// (a) off (the default): covered as before, no reload
+body.textContent = AD52('1:00'); step(12);
+check('reload: off by default -> no reload, the ad is covered', reloads52 === 0 && !!S.fullCover);
+body.textContent = ''; step(8);
+// (b) on: a mid-stream break with no small player reloads the page once
+attrs52['data-adswap-reload'] = 'on';
+body.textContent = AD52('1:00'); step(12);
+check('reload: on -> the page is reloaded once, instead of covering', reloads52 === 1 && !S.fullCover &&
+  last().type === 'reload' && /only one player/.test(last().why));
+check('...the note that stops a reload loop is kept for this tab', JSON.parse(sess52['adswap.reload']).channel === 'streamer_two');
+check('...the banner says what is happening', /reloading the page to look for the small player/.test(S.badge.textContent));
+S.reloading = false;                                           // (a real reload starts the page afresh)
+body.textContent = ''; step(8);
+// (c) another break within 10 minutes: covered, no second reload
+body.textContent = AD52('1:00'); step(12);
+check('reload: again within 10 minutes -> no reload, covered instead', reloads52 === 1 && !!S.fullCover);
+body.textContent = ''; step(8);
+// (d) after 10 minutes it may reload again
+now += 11 * 60 * 1000; step(8);
+body.textContent = AD52('1:00'); step(12);
+check('reload: after 10 minutes -> it may reload again', reloads52 === 2);
+S.reloading = false; body.textContent = ''; step(8);
+// (e) never in a tab the viewer is not looking at
+now += 11 * 60 * 1000; step(8);
+document.visibilityState = 'hidden';
+body.textContent = AD52('1:00'); step(12);
+check('reload: background tab -> no reload', reloads52 === 2 && !!S.fullCover);
+body.textContent = ''; step(8);
+delete document.visibilityState;
+// (f) never for the ad that plays as a channel opens (a reload would only bring another)
+global.location.pathname = '/streamer_three'; step(2);
+body.textContent = AD52('0:30'); step(12);
+check('reload: ad as the channel opens -> no reload', reloads52 === 2 && !!S.fullCover);
+body.textContent = ''; step(8);
+global.location.pathname = '/streamer_two'; step(120);
+// (g) no session storage (the loop guard cannot be kept) -> no reload
+global.sessionStorage = { getItem() { return null; }, setItem() { throw new Error('blocked'); } };
+body.textContent = AD52('1:00'); step(12);
+check('reload: the loop guard cannot be saved -> no reload', reloads52 === 2 && !!S.fullCover);
+body.textContent = ''; step(8);
+delete global.sessionStorage; delete global.location; delete document.documentElement;
 
 // 30. Nothing failed silently anywhere above, and the badge names the version.
 check('no error was swallowed during the whole run', S.err === null);

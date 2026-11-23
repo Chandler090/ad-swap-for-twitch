@@ -71,7 +71,7 @@ var TIPS = {
   /* ---------------- the settings ---------------- */
 
   // Each group of buttons is one setting: data-key on the group, data-value on each button.
-  var DEFAULTS = { fit: 'fill', mini: 'ad', sound: 'stream', full: 'video', notify: 'off' };
+  var DEFAULTS = { fit: 'fill', mini: 'ad', sound: 'stream', full: 'video', notify: 'off', reload: 'off' };
   var groups = document.querySelectorAll('.seg[data-key]');
 
   function showChoice(group, value) {
@@ -105,11 +105,13 @@ var TIPS = {
 
   function showAll(saved) {
     for (var i = 0; i < groups.length; i++) showChoice(groups[i], saved[groups[i].getAttribute('data-key')]);
+    var note = document.getElementById('reload-note');
+    if (note) note.hidden = saved.reload !== 'on';      // say plainly what turning it on costs the streamer
     showTally(saved.swaps, saved.seconds);
   }
   if (store) {
     var wanted = { fit: DEFAULTS.fit, mini: DEFAULTS.mini, sound: DEFAULTS.sound, full: DEFAULTS.full,
-      notify: DEFAULTS.notify, swaps: 0, seconds: 0 };
+      notify: DEFAULTS.notify, reload: DEFAULTS.reload, swaps: 0, seconds: 0 };
     store.get(wanted, showAll);
     chrome.storage.onChanged.addListener(function (changes, area) {
       if (area === 'local') store.get(wanted, showAll);       // e.g. a swap finishing while the popup is open

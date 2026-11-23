@@ -214,7 +214,8 @@
       (fitMode() === 'actual' ? ', actual size' : '') + ')';
     // The first two are normal: Twitch gave nothing to swap in. Say so plainly, so nobody
     // thinks the extension is broken. Only an unexpected miss points at the log.
-    else if (cov && cov.manual) t = 'covered, press the shortcut again to uncover';
+    else if (S.reloading) t = 'reloading the page to look for the small player';
+    else if (cov && cov.manual) t = 'covered, press - to uncover';
     else if (cov) t = 'can\'t swap this ad: ' +
       (cov.kind === 'video' ? 'showing your videos' : cov.kind === 'clips' ? 'showing the streamer’s clips' : 'hidden');
     else if (holdOff && idleText) t = 'leaving this ad break as it is';
@@ -970,6 +971,7 @@
 
     if (active.sawText) S.textWorks = true;
     S.note = null;
+    reloadResult('swapped');
     try {
       active.sound = { ui: uiState(), stream: whereIs(small), ad: whereIs(big), events: [] };
     } catch (e0) { active.sound = { events: [], failed: String(e0 && e0.message) }; }
@@ -1529,6 +1531,54 @@
     return still > STUCK_MS || (adLeft === '0:00' && still > 4000);
   }
 
+  /* ---------------- reload for the small player (optional, off unless the viewer turns it on) ----------------
+     Chief noticed (2026-11-23) that a break with no small player can sometimes be swapped after
+     all by reloading the page: Twitch then brings the small player. The reload cuts the ad that
+     was playing short, so the streamer may not be paid for it; that is why it is off by default.
+     Never for an ad that came as the page opened (a reload would only bring another one), only in
+     the tab the viewer is looking at, and at most once per tab every RELOAD_GAP_MS. The note kept
+     in sessionStorage (per tab, survives the reload) is the guard against a reload loop: if it
+     cannot be written, there is no reload. */
+  var RELOAD_KEY = 'adswap.reload', RELOAD_GAP_MS = 10 * 60 * 1000, RELOAD_CHECK_MS = 3 * 60 * 1000;
+  function reloadOn() {
+    try { return document.documentElement.getAttribute('data-adswap-reload') === 'on'; } catch (e) { return false; }
+  }
+  function lastReload() {
+    try { return JSON.parse(sessionStorage.getItem(RELOAD_KEY) || 'null'); } catch (e) { return null; }
+  }
+  function mayReload(atLoad) {
+    if (!reloadOn() || atLoad) return false;
+    try { if (document.visibilityState === 'hidden') return false; } catch (e) {}
+    var r = lastReload();
+    return !(r && Date.now() - r.t < RELOAD_GAP_MS);
+  }
+  function reloadForMini(why) {
+    var note = { t: Date.now(), channel: channelName(), why: why };
+    try {
+      sessionStorage.setItem(RELOAD_KEY, JSON.stringify(note));
+      if (!lastReload() || lastReload().t !== note.t) return false;       // not kept: no loop guard, no reload
+    } catch (e) { return false; }
+    record({ t: new Date().toISOString(), type: 'reload', why: why, channel: note.channel });
+    S.reloading = true;
+    paint();
+    try { location.reload(); } catch (e2) { S.reloading = false; return false; }
+    return true;
+  }
+  // After a reload: note in the log whether it worked, at the next ad this page sees.
+  var reloadCheck = (function () {
+    var r = lastReload();
+    return r && !r.result && Date.now() - r.t < 60000 ? r : null;
+  })();
+  function reloadResult(result) {
+    if (!reloadCheck) return;
+    var r = reloadCheck;
+    reloadCheck = null;
+    r.result = result;
+    try { sessionStorage.setItem(RELOAD_KEY, JSON.stringify(r)); } catch (e) {}
+    record({ t: new Date().toISOString(), type: 'after reload', result: result,
+      secondsAfterReload: Math.round((Date.now() - r.t) / 1000) });
+  }
+
   function channelName() { return (pathNow().split('/')[1] || '').slice(0, 40); }
 
   // An ad break has ended. The helper script turns this into a notification, if the viewer
@@ -1617,7 +1667,8 @@
   }
 
   function tick() {
-    if (!enabled) return;
+    if (!enabled || S.reloading) return;      // reloading: the page is about to start afresh
+    if (reloadCheck && Date.now() - reloadCheck.t > RELOAD_CHECK_MS) reloadResult('no ad came after the reload');
 
     if (!active) {
       idleTicks++;
@@ -1714,6 +1765,8 @@
         // the ad, and it is covered like any other.
         var onScreen = [];
         for (var v2 = 0; v2 < vs.length; v2++) if (shown(vs[v2])) onScreen.push(vs[v2]);
+        if (onScreen.length === 1 && !reloadCheck && mayReload(atLoad) && reloadForMini(why)) return;
+        reloadResult('still no small player');
         var how = onScreen.length === 1 ? fullMode() : 'ad';
         if (how !== 'ad') startCover(onScreen[0], how);
       } else if (mayAct && text && pair && miniStuckAt && Date.now() - miniStuckAt > STUCK_MINI_MS && !chatOpenedAt) {

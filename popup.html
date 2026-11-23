@@ -214,6 +214,7 @@
     .rise, .live, .ad, .live .tag i { animation: none; }
     .tips a, .tips a svg, .tips a small, .seg button { transition: none; }
   }
+  .warn { margin: 6px 2px 0; color: #e8b86a; font-size: 11.5px; line-height: 1.35; }
 </style>
 </head>
 <body>
@@ -268,6 +269,12 @@
       <button type="button" role="radio" data-value="ad" aria-checked="false" title="Leave these ads alone.">The ad</button>
       <button type="button" role="radio" data-value="hide" aria-checked="false" title="Cover the ad with a plain card and the time left, in silence.">Hidden</button>
     </div>
+    <div class="row"><h3 id="reload-h">Ad break with no small player</h3></div>
+    <div class="seg" data-key="reload" role="radiogroup" aria-labelledby="reload-h">
+      <button type="button" role="radio" data-value="off" aria-checked="true" title="Cover it or leave it, as chosen above. The ad plays to the end, so the streamer is paid for it.">Cover it</button>
+      <button type="button" role="radio" data-value="on" aria-checked="false" title="Reload the page once, which sometimes brings the small player so the ad can be swapped. This cuts the ad short, so the streamer may not be paid for it. At most once every 10 minutes, and never for the ad that plays as a channel opens.">Try a reload</button>
+    </div>
+    <p class="warn" id="reload-note" hidden>A reload cuts the ad short, so the streamer may not be paid for it.</p>
     <div class="row"><h3 id="sound-h">Sound during an ad</h3></div>
     <div class="seg" data-key="sound" role="radiogroup" aria-labelledby="sound-h">
       <button type="button" role="radio" data-value="stream" aria-checked="true" title="Hear the live stream. The advert and your own videos stay silent.">The stream</button>
