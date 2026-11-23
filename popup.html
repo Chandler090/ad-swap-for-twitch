@@ -241,7 +241,7 @@
 
   <p class="cant rise"><strong>Some ads can't be swapped:</strong> one that plays as a channel opens, or a break with no small player. They can be covered instead, and the status banner in Twitch's top bar will tell you when.</p>
 
-  <p class="key rise">Press <kbd id="key">Alt+Shift+A</kbd> on Twitch to cover or uncover the player at any time. <a href="#" id="key-change">Change</a></p>
+  <p class="key rise">Press <kbd>-</kbd> on Twitch to cover or uncover the player at any time<span id="key-also"></span>. It does nothing while you are typing in chat.</p>
   <footer class="rise">Click the banner on Twitch to turn Ad Swap off or on.</footer>
 </div>
 <div class="col">
@@ -259,12 +259,12 @@
       <button type="button" role="radio" data-value="ad" aria-checked="true" title="Show the advert there, muted. The two players are swapped.">The ad</button>
       <button type="button" role="radio" data-value="hide" aria-checked="false" title="Show a plain card with the time left, so you never see the advert.">Hidden</button>
       <button type="button" role="radio" data-value="video" aria-checked="false" title="Play your own videos there instead of the advert. Add them under My videos.">My videos</button>
-      <button type="button" role="radio" data-value="clips" aria-checked="false" title="Play the streamer's most-watched clips there instead of the advert.">Their clips</button>
+      <button type="button" role="radio" data-value="clips" aria-checked="false" title="Play the streamer's most-watched clips there instead of the advert.">Streamer&rsquo;s clips</button>
     </div>
     <div class="row"><h3 id="full-h">Ads that can&rsquo;t be swapped</h3></div>
     <div class="seg four" data-key="full" role="radiogroup" aria-labelledby="full-h">
       <button type="button" role="radio" data-value="video" aria-checked="true" title="Cover the ad with your own videos, with their sound. If you have not added any, the streamer's clips; if there are none, the ad plays.">My videos</button>
-      <button type="button" role="radio" data-value="clips" aria-checked="false" title="Cover the ad with the streamer's most-watched clips, with their sound.">Their clips</button>
+      <button type="button" role="radio" data-value="clips" aria-checked="false" title="Cover the ad with the streamer's most-watched clips, with their sound.">Streamer&rsquo;s clips</button>
       <button type="button" role="radio" data-value="ad" aria-checked="false" title="Leave these ads alone.">The ad</button>
       <button type="button" role="radio" data-value="hide" aria-checked="false" title="Cover the ad with a plain card and the time left, in silence.">Hidden</button>
     </div>

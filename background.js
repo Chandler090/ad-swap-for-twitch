@@ -1,8 +1,8 @@
 // The extension's background script. Three small jobs:
 //
-//   1. The keyboard shortcut (Alt+Shift+A unless the viewer changes it at
-//      chrome://extensions/shortcuts): tell the Twitch tab in front to cover or uncover the
-//      player. bridge.js passes it on to the page.
+//   1. An extra keyboard shortcut, if the viewer sets one at chrome://extensions/shortcuts
+//      (the main one, "-", is handled on the Twitch page itself): tell the Twitch tab in front
+//      to cover or uncover the player. bridge.js passes it on to the page.
 //   2. "Tell me when an ad break ends" (off unless the viewer turns it on in the popup, which
 //      also asks Chrome for permission to show notifications): when a Twitch tab the viewer is
 //      not looking at says its ad break is over, show a notification. Clicking it brings that

@@ -29,14 +29,19 @@
   var movedAt = 0;          // when we last jumped, so we do not judge the timing mid-jump
   var url = null, failed = 0;
   var CLIPS = /[?&]src=clips(&|$)/.test(location.search);
+  // Covering an ad that can't be swapped (player.html?why=noswap): say so, and when the stream is back.
+  var NOSWAP = /[?&]why=noswap(&|$)/.test(location.search);
   var clipsWaiting = null;   // resolves with the clip list when the Twitch page sends it
   var label = document.getElementById('label'), clipTitle = document.getElementById('clip-title');
   var back = document.getElementById('back'), backTime = document.getElementById('back-t');
+  var why = document.getElementById('why'), what = document.getElementById('what');
+  if (why) why.hidden = !NOSWAP;
+  if (what) what.hidden = !CLIPS;         // own videos have no "CLIP" line, only the two below
 
   // "The live stream is back in 0:42", while clips play during an ad break. Hidden when there
   // is no ad on (the viewer covered the player with the shortcut) or the time is not known.
   function showBack() {
-    if (!CLIPS || !back || !backTime) return;
+    if (!(CLIPS || NOSWAP) || !back || !backTime) return;
     var s = leftNow();
     if (s === null || !started) { back.hidden = true; return; }
     s = Math.max(0, Math.ceil(s - 0.3));
@@ -69,8 +74,8 @@
     if (CLIPS && label && clipTitle) {          // never let the label stop a clip from playing
       clipTitle.textContent = item.name || 'Clip';
       clipTitle.title = item.name || '';
-      label.hidden = false;
     }
+    if ((CLIPS || NOSWAP) && label) label.hidden = false;
     video.src = url;
     video.playbackRate = 1;
     var p = video.play();

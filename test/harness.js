@@ -25,6 +25,13 @@ function mkEl(tag) {
       this.isConnected = false; this.parentNode = null;
       const i = pageVideos.indexOf(this); if (i >= 0) pageVideos.splice(i, 1);
     },
+    kids: [], _text: '', _on: {},
+    appendChild(c) { this.kids.push(c); c.parentNode = this; c.isConnected = true; return c; },
+    addEventListener(k, fn) { (this._on[k] = this._on[k] || []).push(fn); },
+    fire(k) { const e = { stopped: false, stopPropagation() { this.stopped = true; }, preventDefault() {} };
+      (this._on[k] || []).forEach(fn => fn(e)); return e; },
+    get textContent() { return this.kids.length ? this.kids.map(c => c.textContent).join(' | ') : this._text; },
+    set textContent(t) { this._text = String(t); this.kids = []; },
     set srcObject(s) { this._src = s; if (s && s.from && !this._blank) { this.videoWidth = s.from.videoWidth; this.videoHeight = s.from.videoHeight; } },
     get srcObject() { return this._src; },
   };
@@ -762,7 +769,7 @@ body.textContent = AD43('0:20'); step(4);
 check('videos added: not covered in the first second (the small player may still appear)', !S.fullCover);
 step(8);
 check('videos added: after that the ad is covered with their videos', !!S.fullCover && S.fullCover.id === '__adswap_fullvideo' &&
-  S.fullCover.src === 'chrome-extension://abcdefghijklmnop/player.html' && S.fullCover.style.width === '1280px');
+  S.fullCover.src === 'chrome-extension://abcdefghijklmnop/player.html?why=noswap' && S.fullCover.style.width === '1280px');
 check('...the ad is silent, though Twitch still sees its player as unmuted', main2._m === true && main2.muted === false);
 check('...and the banner says so', /can't swap this ad: showing your videos/.test(S.badge.textContent));
 const told43 = [];
@@ -792,9 +799,11 @@ attrs43['data-adswap-full'] = 'hide';
 step(8);
 body.textContent = AD43('1:05'); step(12);
 check('"hidden": a card covers the ad', !!S.fullCover && S.fullCover.id === '__adswap_fullcard' && S.fullCover.style.width === '1280px');
-check('...with the time left, and the ad silent', /^Ad break\s+.\s+1:05 left$/.test(S.fullCover.textContent) && main2._m === true);
+check('...it says the ad cannot be swapped and when the stream is back, and the ad is silent',
+  S.fullCover.kids[0].kids[0].textContent === 'This ad can’t be swapped' &&
+  S.fullCover.kids[0].kids[1].textContent === 'The live stream is back in 1:05' && main2._m === true);
 body.textContent = AD43('1:04'); step(4);
-check('...counting down', /1:04 left$/.test(S.fullCover.textContent));
+check('...counting down', /back in 1:04$/.test(S.fullCover.kids[0].kids[1].textContent));
 check('...and the banner says hidden', /can't swap this ad: hidden/.test(S.badge.textContent));
 
 // (d) changing the setting mid-ad takes effect
@@ -829,7 +838,9 @@ S.coverNow();                                                // no ad on: cover 
 check('shortcut, no ad, no videos: a plain card covers the player, the sound is off', !!S.fullCover &&
   S.fullCover.id === '__adswap_fullcard' && main2._m === true && main2.muted === false);
 step(4);
-check('...it says "Covered" and the banner says how to undo it', S.fullCover.textContent === 'Covered' &&
+check('...it says "Covered", how to undo it, offers no clips button, and the banner says so too',
+  S.fullCover.kids[0].kids[0].textContent === 'Covered' && S.fullCover.kids[0].kids[1].textContent === 'Press - to uncover' &&
+  S.fullCover.kids[0].kids.length === 2 &&
   /press the shortcut again/.test(S.badge.textContent));
 step(40);
 check('...and stays, with no ad on, until the shortcut is pressed again', !!S.fullCover);
@@ -907,8 +918,8 @@ body.textContent = ''; step(8);
 Object.assign(S.clipStore, { channel: 'streamer_one', list: CLIPS45, at: now, busy: true });
 body.textContent = AD45('0:20'); step(12);
 check('clips: no videos added -> the streamer\'s clips cover the ad', !!S.fullCover && S.fullCover.id === '__adswap_fullvideo' &&
-  S.fullCover.src === 'chrome-extension://abcdefghijklmnop/player.html?src=clips');
-check('...the banner says so', /can't swap this ad: showing their clips/.test(S.badge.textContent));
+  S.fullCover.src === 'chrome-extension://abcdefghijklmnop/player.html?src=clips&why=noswap');
+check('...the banner says so', /can't swap this ad: showing the streamer’s clips/.test(S.badge.textContent));
 const told45 = [];
 S.fullCover.contentWindow = { postMessage(m, o) { told45.push(m); } };
 step(5);
@@ -950,7 +961,41 @@ delete attrs45['data-adswap-mini'];
 // (g) the shortcut uses them too when there are no videos of their own
 S.coverNow();
 check('clips: the shortcut covers with their clips when no videos are added', !!S.fullCover && /src=clips/.test(S.fullCover.src));
+check('...and, covered by you rather than for an ad, the video page is not told the ad cannot be swapped',
+  !/why=noswap/.test(S.fullCover.src));
 S.coverNow(); step(8);
+// (h) ASKED (2026-11-23): an ad covered by the plain card offers the streamer's clips instead.
+//     The click is kept from the advert underneath, saves the choice, and swaps the cover over
+//     at once, with the ad silent throughout and the break counted once.
+const posted45 = [];
+window.postMessage = (m) => posted45.push(m);
+attrs45['data-adswap-full'] = 'hide';
+body.textContent = AD45('0:30'); step(12);
+const card45 = S.fullCover, btn45 = card45 && card45.kids[0].kids[2];
+check('card: an ad that cannot be swapped gets the plain card, with a button for the clips',
+  !!card45 && card45.id === '__adswap_fullcard' && !!btn45 && btn45.tagName === 'BUTTON' &&
+  btn45.textContent === 'Show the streamer’s clips instead' && btn45.style.display === '' &&
+  /pointer-events:auto/.test(btn45.style.cssText));
+check('...a press on the button does not reach the advert', btn45.fire('mousedown').stopped && btn45.fire('pointerdown').stopped);
+const clicked45 = btn45.fire('click');
+check('...clicking it saves the choice and covers the ad with the clips straight away', clicked45.stopped &&
+  posted45.some(m => m.type === 'setFull' && m.value === 'clips') &&
+  !!S.fullCover && S.fullCover.id === '__adswap_fullvideo' && /src=clips/.test(S.fullCover.src) && main2._m === true);
+step(12);                                                    // the saved setting has not reached the page yet
+check('...and it stays on the clips while the saved setting catches up', !!S.fullCover && /src=clips/.test(S.fullCover.src));
+attrs45['data-adswap-full'] = 'clips'; step(4);
+check('...and after it has', !!S.fullCover && /src=clips/.test(S.fullCover.src));
+body.textContent = ''; step(8);
+check('...the break is counted once', posted45.filter(m => m.type === 'swapped').length === 1 && !S.fullCover && main2._m === false);
+// no clips for the channel: no button
+S.clipStore.list = [];
+attrs45['data-adswap-full'] = 'hide';
+body.textContent = AD45('0:30'); step(12);
+check('card: no clips for this channel -> no button showing', !!S.fullCover && S.fullCover.kids[0].kids[2].style.display === 'none');
+body.textContent = ''; step(8);
+S.clipStore.list = CLIPS45;
+delete window.postMessage;
+delete attrs45['data-adswap-full'];
 S.clipStore.busy = false; S.clipStore.list = null; S.clipStore.channel = '';
 delete global.location;
 delete document.documentElement;
@@ -981,7 +1026,7 @@ step(24);                                                    // 6 seconds: no sm
 check('hidden small player: chat is put back as it was', chat.collapsed === true);
 step(8);
 check('hidden small player: then the ad is covered with the clips', !!S.fullCover && /src=clips/.test(S.fullCover.src) &&
-  /showing their clips/.test(S.badge.textContent));
+  /showing the streamer’s clips/.test(S.badge.textContent));
 check('...covering the player that is on screen, not the hidden one', S.fullCover.parentNode !== null && main2._m === true);
 body.textContent = ''; step(8);
 check('...and uncovered when the ad ends', !S.fullCover && main2._m === false);
@@ -1038,6 +1083,80 @@ check('stuck small player starts playing: the cover goes and the players are swa
 body.textContent = ''; stuck49.remove(); step(8);
 check('...and all back to normal after the break', mirrors().length === 0 && !S.fullCover && main2._m === false);
 delete document.documentElement;
+
+// 50. ASKED (2026-11-23): "have it auto turn on captions for the ads then turn them back off or
+//     how they had it set when the ads end". Twitch keeps the choice in localStorage
+//     'captionsEnabled'; its "Captions (c)" button is only there while something has captions.
+body.textContent = ''; step(16);
+const store50 = {};
+global.localStorage = { getItem(k) { return k in store50 ? store50[k] : null; }, setItem(k, v) { store50[k] = String(v); } };
+let ccClicks = 0, ccShown = false;
+const ccBtn = { click() { ccClicks++; store50.captionsEnabled = store50.captionsEnabled === 'true' ? 'false' : 'true'; } };
+const root50 = { querySelectorAll() { return []; }, setAttribute() {}, removeAttribute() {},
+  querySelector(sel) { return ccShown && /aria-label\^="Captions"/.test(sel) ? ccBtn : null; } };
+main2.closest = (sel) => sel === '.video-player' ? root50 : null;
+store50.captionsEnabled = 'false';
+body.textContent = AD;
+const mini50 = realVideo(320, 180, 640, 360, true, 0);
+step(3);
+check('captions: swap entered, no captions button on the player yet -> nothing clicked', mirrors().length === 2 && ccClicks === 0);
+ccShown = true; step(2);
+check('captions: the button appears -> captions turned on', ccClicks === 1 && store50.captionsEnabled === 'true');
+step(20);
+check('...and clicked once only', ccClicks === 1);
+body.textContent = ''; mini50.remove(); step();
+check('captions: turned back off when the break ends, and the log says so', ccClicks === 2 &&
+  store50.captionsEnabled === 'false' && last().captionsTurnedOn === true);
+step(8);
+store50.captionsEnabled = 'true';                              // the viewer has them on already
+body.textContent = AD;
+const mini51 = realVideo(320, 180, 640, 360, true, 0);
+step(12);
+body.textContent = ''; mini51.remove(); step();
+check('captions: already on -> never touched, and still on after', ccClicks === 2 && store50.captionsEnabled === 'true' &&
+  last().captionsTurnedOn === false);
+step(8);
+store50.captionsEnabled = 'false';
+body.textContent = AD;
+const mini52 = realVideo(320, 180, 640, 360, true, 0);
+step(4);
+check('captions: on again for the next break', ccClicks === 3 && store50.captionsEnabled === 'true');
+ccShown = false;                                               // the button has gone by the end
+body.textContent = ''; mini52.remove(); step();
+check('captions: no button at the end -> the saved choice is put back to off', ccClicks === 3 && store50.captionsEnabled === 'false');
+step(8);
+store50.captionsEnabled = 'false'; ccShown = true;
+body.textContent = AD;
+const mini53 = realVideo(320, 180, 640, 360, true, 0);
+step(4);
+ccBtn.click();                                                 // the viewer turns them off during the break
+body.textContent = ''; mini53.remove(); step();
+check('captions: turned off by the viewer during the break -> left off', ccClicks === 5 && store50.captionsEnabled === 'false');
+step(8);
+delete main2.closest; delete global.localStorage;
+
+// 51. ASKED (2026-11-23): the cover shortcut is "-", which Twitch does not use, and never fires
+//     while the viewer is typing (chat is an editable box; search is an input).
+body.textContent = ''; step(16);
+const key = (o) => S.onKey(Object.assign({ key: '-', target: { tagName: 'DIV' } }, o));
+key({});
+check('"-" covers the player', !!S.fullCover && S.fullCover.id === '__adswap_fullcard');
+key({ repeat: true });
+check('...holding it down does not flip it back and forth', !!S.fullCover);
+key({ key: '_', code: 'NumpadSubtract' });
+check('...the number pad\'s minus uncovers it', !S.fullCover);
+key({ target: { tagName: 'DIV', isContentEditable: true } });
+check('"-" typed in chat does nothing', !S.fullCover);
+key({ target: { tagName: 'INPUT' } });
+check('"-" typed in the search box does nothing', !S.fullCover);
+key({ target: { tagName: 'SPAN', closest(sel) { return /role="textbox"/.test(sel) ? {} : null; } } });
+check('"-" inside a text box does nothing', !S.fullCover);
+key({ ctrlKey: true });
+key({ altKey: true });
+check('Ctrl+- (browser zoom) and Alt+- do nothing', !S.fullCover);
+key({ key: 'a' });
+check('other keys do nothing', !S.fullCover);
+step(8);
 
 // 30. Nothing failed silently anywhere above, and the badge names the version.
 check('no error was swallowed during the whole run', S.err === null);

@@ -34,14 +34,17 @@
     font-size: 0.78em; letter-spacing: 0.06em;
   }
   #clip-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-  #back { margin-top: 0.25em; color: #9fe7dd; font-weight: 500; font-size: 0.86em; font-variant-numeric: tabular-nums; }
+  #why { margin-bottom: 0.3em; color: #c9d1d5; font-weight: 500; font-size: 0.8em; }
+  #what + #back { margin-top: 0.25em; }
+  #back { color: #9fe7dd; font-weight: 500; font-size: 0.86em; font-variant-numeric: tabular-nums; }
   [hidden] { display: none !important; }
 </style>
 </head>
 <body>
 <video id="v" muted autoplay playsinline></video>
 <div id="label" hidden>
-  <div class="what"><b>CLIP</b><span id="clip-title"></span></div>
+  <div id="why" hidden>This ad can&rsquo;t be swapped</div>
+  <div class="what" id="what"><b>CLIP</b><span id="clip-title"></span></div>
   <div id="back" hidden>The live stream is back in <span id="back-t"></span></div>
 </div>
 <p id="msg" hidden>No videos yet. Add some under &ldquo;My videos&rdquo; in Ad Swap.</p>

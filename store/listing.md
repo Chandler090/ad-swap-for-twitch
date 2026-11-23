@@ -1,7 +1,7 @@
 # Ad Swap for Twitch: Chrome Web Store listing
 
 Everything below is ready to paste into the Chrome Web Store Developer Dashboard.
-Upload file: `store/ad-swap-for-twitch-0.43.zip`
+Upload file: `store/ad-swap-for-twitch-0.44.zip`
 
 ---
 
@@ -30,11 +30,11 @@ Upload file: `store/ad-swap-for-twitch-0.43.zip`
     • Works in fullscreen and theatre mode
     • Works with chat closed: it opens chat for the break (Twitch only runs the small stream while chat is open) and closes it again afterwards
     • Twitch's own volume slider and mute button control the stream during the swap
-    • The advert's subtitles, when it has them, stay with the advert in the small player
+    • The advert's subtitles, when it has them, stay with the advert in the small player. Ad Swap turns Twitch's captions on for the break if you had them off, and puts them back the way you had them afterwards
     • Your choice of stream size during an ad: fill the player, or keep it at its real size for the sharpest picture
     • Your choice of what the small player shows: the advert, nothing at all (a plain card with the time left), your own videos, or the streamer's own most-watched clips
     • Your choice of sound: the live stream (the default), or the small player instead
-    • A keyboard shortcut (Alt+Shift+A, changeable) to cover the player at any moment, for anything you would rather not see, and to uncover it again
+    • A keyboard shortcut, the - (minus) key, to cover the player at any moment, for anything you would rather not see, and to uncover it again. It does nothing while you are typing in chat
     • An optional notification when an ad break ends, if you have gone to another tab
     • A safety net: if Twitch leaves its ad notice stuck on screen, Ad Swap lets go so you are never left looking at a cover
     • A running count of the ad breaks it has swapped and the time you didn't spend watching ads
@@ -53,11 +53,11 @@ Upload file: `store/ad-swap-for-twitch-0.43.zip`
     Ad Swap can only show you the stream when Twitch has put the stream on the page. Two kinds of ad come without it:
     • Ads when you open a channel. When you open, refresh or switch to a channel, Twitch often plays an ad before the stream starts. There is no stream on the page yet, so there is nothing to swap in.
     • Full-screen ad breaks. Some breaks replace the stream completely and no small player appears above chat.
-    When one of these plays, the banner says "can't swap this ad" and gives the reason. Ad Swap is working; it is waiting for an ad break that comes with the small player. Those are usually the ad breaks a streamer runs in the middle of a stream.
+    When one of these plays, the banner says "can't swap this ad" and gives the reason, and the cover itself says "This ad can't be swapped". Ad Swap is working; it is waiting for an ad break that comes with the small player. Those are usually the ad breaks a streamer runs in the middle of a stream.
     You still do not have to watch them. Ad Swap can cover these ads and mute them until they end:
     • with your own videos, if you have added any (this is the default)
     • otherwise with the streamer's own most-watched clips from the channel you are watching, clearly labelled as a clip with the time until the live stream is back. Each break brings clips you have not seen yet, until you have seen them all
-    • with a plain card showing the time left
+    • with a plain card showing the time left, and a button to switch to the streamer's clips instead
     • or not at all, leaving the ad as it is (what happens if there are no videos and no clips)
     The stream itself is not available during these ads, so it cannot be shown; the cover comes off the moment the ad ends.
     Tip: if you are testing it, stay on one channel. Every refresh or channel change can bring another opening ad.
@@ -136,7 +136,7 @@ new pictures: `python store/make_screenshots.py <first> <second>`. The old v0.22
 
     scripting (with host access to https://www.twitch.tv/* only): when AdSwap is installed or updated, Twitch tabs that are already open would otherwise keep running the old copy until refreshed. The background script puts the current copy of AdSwap's own two files into those Twitch tabs once, at install or update. It runs nothing else and touches no other site.
 
-    Keyboard shortcut and background script: a single shortcut (Alt+Shift+A by default) lets the viewer cover or uncover the Twitch player at will; the background script only passes that key press to the Twitch tab in front, and shows the optional notification.
+    Keyboard shortcut and background script: the - key on a Twitch page lets the viewer cover or uncover the Twitch player at will (the content script handles it). The viewer can also give the same action a Chrome shortcut at chrome://extensions/shortcuts; the background script only passes that key press to the Twitch tab in front, and shows the optional notification.
 
 **Remote code**
 
@@ -162,7 +162,7 @@ new pictures: `python store/make_screenshots.py <first> <second>`. The old v0.22
 ## Test instructions tab
 
     No account or login is needed. Open any live Twitch channel.
-    Ad breaks cannot be started on demand, so to see the cover at any time press Alt+Shift+A on the Twitch page: the player is covered and muted (with the streamer's clips, or a plain card), and pressing it again uncovers it.
+    Ad breaks cannot be started on demand, so to see the cover at any time press the - (minus) key on the Twitch page, with the cursor not in chat: the player is covered and muted (with the streamer's clips, or a plain card), and pressing it again uncovers it.
     During a real ad break that keeps the live stream in the small player above chat, the stream moves to the main player with sound and the ad to the small player, muted. Ads that open a channel are usually the quickest to see: refresh a channel page.
     The extension's settings are in its toolbar popup.
 

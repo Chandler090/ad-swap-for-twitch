@@ -21,6 +21,7 @@
 //   5. Passes the keyboard shortcut from the background script to the page, and an "ad break
 //      over" from the page to the background script (for the notification), but only when
 //      the viewer is not looking at this tab.
+//   6. Saves the choice made on the card over an ad ("Show the streamer's clips instead").
 //
 // When AdSwap is installed or updated, background.js also puts this file into Twitch tabs that
 // are already open, so they need no refresh. It must then run only once per tab, and it takes
@@ -78,6 +79,15 @@
         chrome.runtime.sendMessage({ type: 'breakOver', channel: String(d.channel || '').slice(0, 40) })
           .catch(function () {});
       } catch (err) {}
+    });
+
+    // The viewer pressed "Show the streamer's clips instead" on the card over an ad: save it as
+    // their choice for ads that can't be swapped, the same as picking it in the popup.
+    window.addEventListener('message', function (e) {
+      var d = e.data;
+      if (e.source !== window || !d || d.source !== 'adswap' || d.type !== 'setFull' || !connected()) return;
+      if (d.value !== 'clips' && d.value !== 'video' && d.value !== 'hide' && d.value !== 'ad') return;
+      try { chrome.storage.local.set({ full: d.value }); } catch (err) {}
     });
 
     // The keyboard shortcut was pressed while this tab was in front.

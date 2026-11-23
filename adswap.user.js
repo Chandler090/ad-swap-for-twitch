@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Ad Swap for Twitch
 // @namespace    local
-// @version      0.43
+// @version      0.44
 // @description  During a Twitch picture-by-picture ad break, swap the two players: live stream in the main spot with sound, ad in the mini spot, then put everything back when the break ends.
 // @match        https://www.twitch.tv/*
 // @grant        none
@@ -25,7 +25,7 @@
   S.err = null;
   S.note = null;
 
-  var VERSION = '0.43';
+  var VERSION = '0.44';
   var STORE = 'adswap.log';
   // The history survives a page refresh, so a break can be reported after the fact.
   if (!S.log.length) {
@@ -216,7 +216,7 @@
     // thinks the extension is broken. Only an unexpected miss points at the log.
     else if (cov && cov.manual) t = 'covered, press the shortcut again to uncover';
     else if (cov) t = 'can\'t swap this ad: ' +
-      (cov.kind === 'video' ? 'showing your videos' : cov.kind === 'clips' ? 'showing their clips' : 'hidden');
+      (cov.kind === 'video' ? 'showing your videos' : cov.kind === 'clips' ? 'showing the streamer’s clips' : 'hidden');
     else if (holdOff && idleText) t = 'leaving this ad break as it is';
     else if (S.note) t = /ad at page load/.test(S.note)
       ? 'can\'t swap this ad: it plays as the channel opens'
@@ -714,6 +714,45 @@
     a.capBox = S.capBox = null;
   }
 
+  /* Twitch's own captions switch, so the advert's subtitles can be shown in the small player.
+     Twitch keeps the viewer's choice in localStorage 'captionsEnabled'. The button ("Captions (c)")
+     is only on the player while something on it has captions, so it is looked for every tick. If
+     AdSwap turned captions on, it turns them off again when the break ends; if the viewer already
+     had them on, or switched them off during the break, they are left as they are. */
+  function capsOn() {
+    try { return localStorage.getItem('captionsEnabled') === 'true'; } catch (e) { return false; }
+  }
+  function capsButton(a) {
+    var root = a.capRoot || capRoot(a);
+    if (!root || !root.querySelector) return null;
+    return root.querySelector('button[aria-label^="Captions"]');
+  }
+  function capsEnsure(a) {
+    if (a.capsWasOn === undefined) a.capsWasOn = capsOn();
+    if (a.capsWasOn || a.capsClicks >= 2) return;
+    if (a.capsTurnedOn) return;
+    if (capsOn()) {                           // our click took (Twitch may save it a moment later)
+      if (a.capsClicks) { a.capsTurnedOn = true; log('captions turned on for the ad'); }
+      else a.capsWasOn = true;                // the viewer turned them on themselves
+      return;
+    }
+    if (Date.now() < (a.capsNextTry || 0)) return;
+    var b = capsButton(a);
+    if (!b) return;
+    a.capsClicks = (a.capsClicks || 0) + 1;
+    a.capsNextTry = Date.now() + 1500;
+    b.click();
+    if (capsOn()) { a.capsTurnedOn = true; log('captions turned on for the ad'); }
+  }
+  function capsRestore(a) {
+    if (!a.capsTurnedOn || !capsOn()) return;
+    var b = capsButton(a);
+    if (b) b.click();
+    // No button (the player has moved on to something without captions): put the saved choice back.
+    if (capsOn()) { try { localStorage.setItem('captionsEnabled', 'false'); } catch (e) {} }
+    log('captions put back off after the break');
+  }
+
   function capSync(a) {
     if (!a.capBox) return;
     var boxes = capBoxes(a), text = '', i, now = Date.now();
@@ -972,6 +1011,7 @@
     // if Twitch has taken it off the page for now: Twitch re-uses the same element later.
     if (a.mode === 'inplace') a.small.style.cssText = a.origStyle;
     try { capStop(a); } catch (e9) {}
+    try { capsRestore(a); } catch (e11) {}
     if (a.want) releaseVolume(a);
     else a.big.muted = a.bigMuted;
     // Silence the mini stream again so it is not heard twice, unless it is now the only
@@ -988,6 +1028,7 @@
       res: a.res, resLog: a.resLog,
       mode: a.mode, streamPlacement: a.mode === 'mirror' ? a.where : 'inplace',
       adInMini: a.adShown === true, chatOpenedByScript: a.openedChat, ended: reason,
+      captionsTurnedOn: a.capsTurnedOn === true,
       slider: a.slider ? 'controls the stream' : 'not taken over', sound: a.sound,
       subtitles: [a.cap1, a.cap2].filter(Boolean), adSubtitles: a.capLog,
       tabAtStart: a.tabAtStart, hadToStartSmallPlayer: a.nudged, streamSize: fitMode(), copyRes: a.copyRes, smallPlayerShowed: a.miniWas, heard: a.heardNow || 'stream',
@@ -1052,6 +1093,57 @@
   var cov = null;           // the ad being covered right now, or null
   var FULL_CARD = 'color:#d7dde0;font:600 22px system-ui,sans-serif;text-align:center;white-space:nowrap;' +
     'overflow:hidden;background:#111315;';
+  // Inside the card (fit() sets the card's own display, so the layout lives one level down).
+  var CARD_BOX = 'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;width:100%;height:100%;';
+  var CARD_SUB = 'font:500 15px system-ui,sans-serif;color:#9aa3a8;font-variant-numeric:tabular-nums;';
+  var CARD_BTN = 'pointer-events:auto;cursor:pointer;margin-top:10px;padding:9px 16px;border:0;border-radius:8px;' +
+    'background:#2bc4b2;color:#04211e;font:600 14px system-ui,sans-serif;';
+
+  // The plain card over an ad: what it is, when the stream is back, and (for an ad that cannot be
+  // swapped, when the channel has clips) a button to show the streamer's clips instead.
+  function cardBuild(c) {
+    var box = document.createElement('div'), t = document.createElement('div'), s = document.createElement('div');
+    box.style.cssText = CARD_BOX;
+    s.style.cssText = CARD_SUB;
+    c.el.appendChild(box);
+    box.appendChild(t);
+    box.appendChild(s);
+    c.cardTitle = t;
+    c.cardSub = s;
+    if (c.manual || !baseUrl()) return;
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = 'Show the streamer’s clips instead';
+    b.title = 'Covers ads that can’t be swapped with the streamer’s clips from now on. You can change it back in Ad Swap’s menu.';
+    b.style.cssText = CARD_BTN + 'display:none;';
+    // Keep the click to ourselves: under the card is the advert, and a click on that opens the advertiser's page.
+    var keep = function (e) { e.stopPropagation(); };
+    ['pointerdown', 'pointerup', 'mousedown', 'mouseup', 'dblclick'].forEach(function (k) { b.addEventListener(k, keep); });
+    b.addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (e.preventDefault) e.preventDefault();
+      switchCoverTo('clips');
+    });
+    box.appendChild(b);
+    c.cardBtn = b;
+  }
+  function setText(e, words) { if (e && e.textContent !== words) e.textContent = words; }
+
+  // The viewer chose something else on the card: save it (bridge.js keeps it in the settings) and
+  // change the cover now, without uncovering the ad in between.
+  var fullPick = '';          // that choice, until the saved setting reaches this page
+  function switchCoverTo(kind) {
+    var c = cov;
+    if (!c || c.manual) return;
+    fullPick = kind;
+    try { window.postMessage({ source: 'adswap', type: 'setFull', value: kind }, location.origin); } catch (e) {}
+    var how = fullMode();
+    if (how === c.kind || how === 'ad') return;
+    var t0 = c.t0, stuck = c.stuckPair;
+    endCover('switched by you', true);
+    startCover(c.big, how);
+    if (cov) { cov.t0 = t0; cov.stuckPair = stuck; }
+  }
 
   function videoCount() {
     var n = 0;
@@ -1066,7 +1158,8 @@
     if (v !== 'ad' && v !== 'hide' && v !== 'video' && v !== 'clips') {
       v = (S.full === 'ad' || S.full === 'hide' || S.full === 'clips') ? S.full : 'video';
     }
-    if (v === 'video' && (!baseUrl() || videoCount() < 1)) v = 'clips';    // none added: their clips
+    if (fullPick) { if (v === fullPick) fullPick = ''; else v = fullPick; }
+    if (v === 'video' && (!baseUrl() || videoCount() < 1)) v = 'clips';    // none added: the streamer's clips
     if (v === 'clips' && !(baseUrl() && clipsReady())) v = 'ad';           // no clips either: leave the ad
     return v;
   }
@@ -1331,7 +1424,10 @@
       el = document.createElement('iframe');
       el.id = ID_PREFIX + 'fullvideo';
       if (el.setAttribute) el.setAttribute('allow', 'autoplay');
-      el.src = baseUrl() + 'player.html' + (kind === 'clips' ? '?src=clips' : '');
+      var q = [];
+      if (kind === 'clips') q.push('src=clips');
+      if (!manual) q.push('why=noswap');        // the player page says this ad cannot be swapped
+      el.src = baseUrl() + 'player.html' + (q.length ? '?' + q.join('&') : '');
     } else {
       el = document.createElement('div');
       el.id = ID_PREFIX + 'fullcard';
@@ -1339,6 +1435,7 @@
     cov = { big: video, kind: kind, el: el, t0: Date.now(), gone: 0, where: 'inside', bigMuted: video.muted, manual: !!manual,
       sh: null, stateAt: 0, stateKey: '' };
     cov.sh = shadow(video, function () { if (cov && cov.big === video) cov.stateAt = 0; });
+    if (kind === 'hide') cardBuild(cov);
     if (!coverInside(cov)) {
       cov.where = 'over';
       el.style.cssText = COVER_STYLE + (kind === 'hide' ? FULL_CARD : '');
@@ -1378,9 +1475,10 @@
     else if (!c.big.muted) c.big.muted = true;
 
     if (c.kind === 'hide') {
-      var words = adOn && adLeft ? 'Ad break  \u00b7  ' + adLeft + ' left' : (c.manual ? 'Covered' : 'Ad break');
-      if (c.el.textContent !== words) c.el.textContent = words;
-      c.el.style.lineHeight = box.height + 'px';
+      setText(c.cardTitle, c.manual ? 'Covered' : 'This ad can\u2019t be swapped');
+      setText(c.cardSub, c.manual ? 'Press - to uncover' :
+        adOn && adLeft ? 'The live stream is back in ' + adLeft : 'The live stream is back soon');
+      if (c.cardBtn) c.cardBtn.style.display = clipsReady() ? '' : 'none';
     } else if (c.el.contentWindow) {
       // Their videos are heard here (there is no stream to hear), at the level Twitch's slider
       // shows, and silenced by Twitch's mute button.
@@ -1399,7 +1497,7 @@
     }
   }
 
-  function endCover(reason) {
+  function endCover(reason, switching) {
     var c = cov;
     if (!c) return;
     cov = null;
@@ -1410,7 +1508,7 @@
     var seconds = Math.round((Date.now() - c.t0) / 1000);
     record({ t: new Date(c.t0).toISOString(), type: 'covered', showed: c.kind, placement: c.where,
       seconds: seconds, ended: reason, byYou: c.manual });
-    if (seconds >= 3 && !c.manual) {
+    if (seconds >= 3 && !c.manual && !switching) {    // a switch carries on as the same break
       try { window.postMessage({ source: 'adswap', type: 'swapped', seconds: seconds }, location.origin); }
       catch (e) {}
     }
@@ -1442,7 +1540,7 @@
     } catch (e) {}
   }
 
-  // The keyboard shortcut (set in Chrome; Alt+Shift+A unless the viewer changed it):
+  // The keyboard shortcut ("-" on the Twitch page, or a key the viewer set in Chrome):
   //  - during a swap or a cover: show what is really there, and leave the rest of this break alone
   //  - otherwise: cover the player now, with the viewer's videos (or a plain card if they have
   //    none), until the shortcut is pressed again. Useful for anything Ad Swap did not catch.
@@ -1469,6 +1567,25 @@
       });
     }
   } catch (e14) {}
+
+  // The "-" key (the main one or the number pad's), which Twitch does not use for anything.
+  // Never while typing: chat is an editable box, and search and other fields are inputs.
+  function typingIn(t) {
+    if (!t) return false;
+    if (t.isContentEditable) return true;
+    var tag = String(t.tagName || '').toUpperCase();
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+    return !!(t.closest && t.closest('input, textarea, select, [contenteditable=""], [contenteditable="true"], [role="textbox"]'));
+  }
+  function onKey(e) {
+    if (S.coverNow !== coverNow) return;     // an older copy in this tab: leave it to the new one
+    if (!e || e.repeat || e.ctrlKey || e.altKey || e.metaKey) return;
+    if (e.key !== '-' && e.code !== 'NumpadSubtract') return;
+    if (typingIn(e.target) || typingIn(document.activeElement)) return;
+    coverNow();
+  }
+  S.onKey = onKey;
+  try { if (window.addEventListener) window.addEventListener('keydown', onKey, true); } catch (e15) {}
 
   /* ---------------- loop ---------------- */
 
@@ -1648,6 +1765,7 @@
 
     // The advert's subtitles: off the stream, onto the advert in the small player.
     try {
+      capsEnsure(active);
       capSync(active);
       if (Date.now() >= active.capProbeAt) { active.capProbeAt = Date.now() + 2000; capProbe(active); }
     } catch (e10) {}

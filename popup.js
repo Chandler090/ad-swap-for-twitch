@@ -126,18 +126,20 @@ var TIPS = {
 
   /* ---------------- the keyboard shortcut ---------------- */
 
-  // Show the key as it is really set (the viewer may have changed it, or another extension
-  // may have taken it, in which case Chrome leaves it empty).
+  // The key is "-" on the Twitch page. A viewer who also set a key for it in Chrome
+  // (chrome://extensions/shortcuts) is shown that one too.
   try {
     chrome.commands.getAll(function (all) {
       var c = (all || []).filter(function (x) { return x.name === 'cover-now'; })[0];
-      document.getElementById('key').textContent = c && c.shortcut ? c.shortcut : 'not set';
+      var also = document.getElementById('key-also');
+      if (!also || !c || !c.shortcut) return;
+      also.textContent = ' (or ';
+      var k = document.createElement('kbd');
+      k.textContent = c.shortcut;
+      also.appendChild(k);
+      also.appendChild(document.createTextNode(')'));
     });
   } catch (e) {}
-  document.getElementById('key-change').addEventListener('click', function (e) {
-    e.preventDefault();
-    try { chrome.tabs.create({ url: 'chrome://extensions/shortcuts' }); } catch (err) {}
-  });
 
   /* ---------------- the little picture ---------------- */
 

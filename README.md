@@ -16,8 +16,9 @@ covers and mutes those instead, with your own videos, the streamer's own clips, 
 
 It does not block or skip ads. The ad still plays, so the streamer still gets paid for it.
 
-Everything else (stream size, what the small player shows, sound, your own videos, the Alt+Shift+A cover
-shortcut, a notification when a break ends) is set from the extension's toolbar popup.
+Everything else (stream size, what the small player shows, sound, your own videos, a notification when a
+break ends) is set from the extension's toolbar popup. Press `-` on Twitch to cover or uncover the player at
+any time.
 
 ## Files
 
