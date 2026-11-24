@@ -214,7 +214,7 @@
     .rise, .live, .ad, .live .tag i { animation: none; }
     .tips a, .tips a svg, .tips a small, .seg button { transition: none; }
   }
-  .warn { margin: 6px 2px 0; color: #e8b86a; font-size: 11.5px; line-height: 1.35; }
+  .note { margin: 6px 2px 0; color: #9aa3a8; font-size: 11.5px; line-height: 1.35; }
 </style>
 </head>
 <body>
@@ -271,10 +271,10 @@
     </div>
     <div class="row"><h3 id="reload-h">Ad break with no small player</h3></div>
     <div class="seg" data-key="reload" role="radiogroup" aria-labelledby="reload-h">
-      <button type="button" role="radio" data-value="off" aria-checked="true" title="Cover it or leave it, as chosen above. The ad plays to the end, so the streamer is paid for it.">Cover it</button>
-      <button type="button" role="radio" data-value="on" aria-checked="false" title="Reload the page once, which sometimes brings the small player so the ad can be swapped. This cuts the ad short, so the streamer may not be paid for it. At most once every 10 minutes, and never for the ad that plays as a channel opens.">Try a reload</button>
+      <button type="button" role="radio" data-value="off" aria-checked="true" title="Cover it or leave it, as chosen above.">Cover it</button>
+      <button type="button" role="radio" data-value="on" aria-checked="false" title="Reload the page once, which sometimes brings the small player so the ad can be swapped. Twitch then plays a new set of ads, this time with the small player, so the ads still play. At most once every 10 minutes, and never for the ad that plays as a channel opens.">Try a reload</button>
     </div>
-    <p class="warn" id="reload-note" hidden>A reload cuts the ad short, so the streamer may not be paid for it.</p>
+    <p class="note" id="reload-note" hidden>After a reload Twitch plays a new set of ads, with the small player, so they can be swapped.</p>
     <div class="row"><h3 id="sound-h">Sound during an ad</h3></div>
     <div class="seg" data-key="sound" role="radiogroup" aria-labelledby="sound-h">
       <button type="button" role="radio" data-value="stream" aria-checked="true" title="Hear the live stream. The advert and your own videos stay silent.">The stream</button>

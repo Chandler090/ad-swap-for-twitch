@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Ad Swap for Twitch
 // @namespace    local
-// @version      0.44
+// @version      0.45
 // @description  During a Twitch picture-by-picture ad break, swap the two players: live stream in the main spot with sound, ad in the mini spot, then put everything back when the break ends.
 // @match        https://www.twitch.tv/*
 // @grant        none
@@ -25,7 +25,7 @@
   S.err = null;
   S.note = null;
 
-  var VERSION = '0.44';
+  var VERSION = '0.45';
   var STORE = 'adswap.log';
   // The history survives a page refresh, so a break can be reported after the fact.
   if (!S.log.length) {
@@ -1533,8 +1533,8 @@
 
   /* ---------------- reload for the small player (optional, off unless the viewer turns it on) ----------------
      Chief noticed (2026-11-23) that a break with no small player can sometimes be swapped after
-     all by reloading the page: Twitch then brings the small player. The reload cuts the ad that
-     was playing short, so the streamer may not be paid for it; that is why it is off by default.
+     all by reloading the page: Twitch then plays a new set of ads, this time with the small player
+     (Chief's observation). The ad that was playing stops at the reload, so it is off by default.
      Never for an ad that came as the page opened (a reload would only bring another one), only in
      the tab the viewer is looking at, and at most once per tab every RELOAD_GAP_MS. The note kept
      in sessionStorage (per tab, survives the reload) is the guard against a reload loop: if it

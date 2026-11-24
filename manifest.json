@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Ad Swap for Twitch",
-  "version": "0.44",
+  "version": "0.45",
   "description": "During Twitch ad breaks that keep the stream in a mini player, shows the live stream in the main player. Switches back by itself.",
   "minimum_chrome_version": "111",
   "permissions": [
